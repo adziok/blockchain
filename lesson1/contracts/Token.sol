@@ -20,13 +20,9 @@ contract Token {
     mapping(address => uint256) balances;
     mapping(address => mapping(address => ApprovalStruct)) approvals;
 
-    constructor(address _owner, uint256 _initial_token_supply) {
-        require(
-            _initial_token_supply > 0 && _initial_token_supply < totalSupply(),
-            "Invalid initial supply"
-        );
-        balances[_owner] = _initial_token_supply;
-        emit Transfer(address(0), _owner, _initial_token_supply);
+    constructor() {
+        balances[msg.sender] = totalSupply();
+        emit Transfer(address(0), msg.sender, totalSupply());
     }
 
     function name() public view returns (string memory) {
@@ -77,6 +73,7 @@ contract Token {
         approvals[_from][msg.sender].approved_amount -= _value;
         balances[_from] -= _value;
         balances[_to] += _value;
+        emit Transfer(_from, _to, _value);
         return true;
     }
 

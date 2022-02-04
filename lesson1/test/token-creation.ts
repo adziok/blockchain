@@ -7,11 +7,11 @@ describe("Token", function () {
   let owner: SignerWithAddress;
   let otherUser: SignerWithAddress;
   let token: Contract;
-
+  const totalSupplyAlsoInitial = "100000000000000000000000";
   beforeEach(async () => {
     [owner, otherUser] = await ethers.getSigners();
     const TokenFactory = await ethers.getContractFactory("Token");
-    token = await TokenFactory.deploy(owner.address, 100_000);
+    token = await TokenFactory.deploy();
     await token.deployed();
   });
 
@@ -23,7 +23,9 @@ describe("Token", function () {
     });
 
     it("Should show valid balance of token creator", async () => {
-      expect(await token.balanceOf(owner.address)).to.equal(100_000);
+      expect(await token.balanceOf(owner.address)).to.equal(
+        totalSupplyAlsoInitial
+      );
     });
   });
 
@@ -31,7 +33,9 @@ describe("Token", function () {
     it("Should transfer 100 tokens to other user", async () => {
       await token.transfer(otherUser.address, 100);
       expect(await token.balanceOf(otherUser.address)).to.equal(100);
-      expect(await token.balanceOf(owner.address)).to.equal(99_900);
+      expect(await token.balanceOf(owner.address)).to.equal(
+        "99999999999999999999900"
+      );
     });
 
     it("Should throw when transfer to address 0", async () => {
@@ -40,7 +44,9 @@ describe("Token", function () {
       await expect(token.transfer(address0, 100)).to.be.revertedWith(
         "Can not transfer token to address 0"
       );
-      expect(await token.balanceOf(owner.address)).to.equal(100_000);
+      expect(await token.balanceOf(owner.address)).to.equal(
+        totalSupplyAlsoInitial
+      );
     });
   });
 
