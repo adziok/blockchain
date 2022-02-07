@@ -11,14 +11,8 @@ contract Token {
         uint256 _value
     );
 
-    struct ApprovalStruct {
-        address owner;
-        address approved_address;
-        uint256 approved_amount;
-    }
-
     mapping(address => uint256) balances;
-    mapping(address => mapping(address => ApprovalStruct)) approvals;
+    mapping(address => mapping(address => uint256)) approvals;
 
     constructor() {
         balances[msg.sender] = totalSupply();
@@ -51,7 +45,7 @@ contract Token {
         returns (bool success)
     {
         require(_to != address(0), "Can not transfer token to address 0");
-        require(balances[msg.sender] >= _value, "Not enough tokens");
+        require(balances[msg.sender] > _value, "Not enough tokens");
         balances[msg.sender] -= _value;
         balances[_to] += _value;
         emit Transfer(msg.sender, _to, _value);
@@ -65,12 +59,12 @@ contract Token {
         uint256 _value
     ) public returns (bool success) {
         require(
-            approvals[_from][msg.sender].approved_amount >= _value,
+            approvals[_from][msg.sender] >= _value,
             "Invalid approval amount"
         );
         require(balances[_from] >= _value, "Not enough tokens");
 
-        approvals[_from][msg.sender].approved_amount -= _value;
+        approvals[_from][msg.sender] -= _value;
         balances[_from] -= _value;
         balances[_to] += _value;
         emit Transfer(_from, _to, _value);
@@ -81,12 +75,7 @@ contract Token {
         public
         returns (bool success)
     {
-        require(balances[msg.sender] >= _value, "Not enough tokens");
-        approvals[msg.sender][_spender] = ApprovalStruct({
-            owner: msg.sender,
-            approved_address: _spender,
-            approved_amount: _value
-        });
+        approvals[msg.sender][_spender] = _value;
 
         emit Approval(msg.sender, _spender, _value);
         return true;
@@ -97,6 +86,6 @@ contract Token {
         view
         returns (uint256 remaining)
     {
-        return approvals[_owner][_spender].approved_amount;
+        return approvals[_owner][_spender];
     }
 }

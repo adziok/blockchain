@@ -1,13 +1,15 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Contract } from "ethers";
+import { BigNumber, Contract } from "ethers";
 
 describe("Token", function () {
   let owner: SignerWithAddress;
   let otherUser: SignerWithAddress;
   let token: Contract;
-  const totalSupplyAlsoInitial = "100000000000000000000000";
+  const totalSupplyAlsoInitial = BigNumber.from(100_000).mul(
+    BigNumber.from("10").pow(18)
+  );
   beforeEach(async () => {
     [owner, otherUser] = await ethers.getSigners();
     const TokenFactory = await ethers.getContractFactory("Token");
@@ -34,7 +36,7 @@ describe("Token", function () {
       await token.transfer(otherUser.address, 100);
       expect(await token.balanceOf(otherUser.address)).to.equal(100);
       expect(await token.balanceOf(owner.address)).to.equal(
-        "99999999999999999999900"
+        totalSupplyAlsoInitial.sub(100).toString()
       );
     });
 
@@ -80,16 +82,6 @@ describe("Token", function () {
 
       expect(await token.allowance(owner.address, otherUser.address)).to.equal(
         100
-      );
-    });
-
-    it("Should throw when try approve more than have", async () => {
-      await expect(
-        token.connect(otherUser).approve(otherUser.address, 120)
-      ).to.revertedWith("Not enough tokens");
-
-      expect(await token.allowance(owner.address, otherUser.address)).to.equal(
-        0
       );
     });
   });
