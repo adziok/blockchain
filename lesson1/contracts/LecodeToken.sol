@@ -17,13 +17,12 @@ contract Ownable {
 }
 
 contract LeocodeToken is ERC20, Ownable {
-    uint256 _ethAmount = 0;
     struct Vesting {
-        uint256 createdAt;
+        uint256 releasedAt;
         uint256 amount;
     }
 
-    mapping(address => Vesting[]) private _vestings;
+    mapping(address => Vesting) private _vestings;
 
 
     constructor() ERC20("Leocode Token", "LEO") {
@@ -31,21 +30,20 @@ contract LeocodeToken is ERC20, Ownable {
     }
 
     function buy() public payable {
+        require(msg.value > 0, "Value must be greater than 0");
         uint256 amountToBuy = msg.value * 100;
         require(balanceOf(address(this)) >= amountToBuy, "Token limit exceeded");
         require(isBuyInLessThanWeekAgo() == false, "Token already bought in less than a week");
-        _vestings[msg.sender].push(Vesting({
-            createdAt: block.timestamp,
+        _vestings[msg.sender] = Vesting({
+            releasedAt: block.timestamp + (7 days),
             amount: amountToBuy
-        }));
+        });
         _transfer(address(this), msg.sender, amountToBuy);
-        _ethAmount+=msg.value;
     }
 
     function payMeUp() public isOwner {
         address payable ownerPayable = payable(owner);
-        ownerPayable.transfer(_ethAmount);
-        _ethAmount = 0;
+        ownerPayable.transfer(address(this).balance);
     }
 
     function _beforeTokenTransfer(
@@ -58,27 +56,17 @@ contract LeocodeToken is ERC20, Ownable {
         }
     }
 
-    function gimme(uint256 _amount) public {
-        _mint(msg.sender, _amount * (10 ** decimals()));
-    }
-
     function getLockedTokensAmount(address sender) public view returns (uint256) {
-        uint256 _availableAmount = 0;
-        for (uint i = 0; i < _vestings[sender].length; i++) {
-            if (_vestings[sender][i].createdAt + (7 days) > block.timestamp) {
-                _availableAmount += _vestings[sender][i].amount;
-            }
+        if (_vestings[sender].releasedAt > block.timestamp) {
+            return _vestings[sender].amount;
         }
-        return _availableAmount;
+        return 0;
     }
 
     function isBuyInLessThanWeekAgo() public view returns (bool) {
-        bool _isBuyInLessThanWeekAgo = false;
-        for (uint i = 0; i < _vestings[msg.sender].length; i++) {
-            if (_vestings[msg.sender][i].createdAt + (7 days) > block.timestamp) {
-                _isBuyInLessThanWeekAgo = true;
-            }
+        if (_vestings[msg.sender].releasedAt > block.timestamp) {
+            return true;
         }
-        return _isBuyInLessThanWeekAgo;
+        return false;
     }
 }

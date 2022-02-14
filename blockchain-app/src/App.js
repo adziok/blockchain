@@ -21,12 +21,6 @@ function App() {
     setTokenAmount(_formattedTokens);
   };
 
-  const gimme = (_token) => async (amount) => {
-    const tx = await _token.gimme(amount + "");
-    await tx.wait();
-    await refresh(token, signer);
-  };
-
   const buy = (_token) => async (amount) => {
     const tx = await _token.buy({
       value: ethers.utils.parseUnits(amount + "", 18),
@@ -80,7 +74,6 @@ function App() {
         <div>
           <input value={gimmeTokenAmount} onChange={onChange} />
         </div>
-        <button onClick={() => gimme(token)(gimmeTokenAmount)}>DEJ</button>
         <button onClick={() => buy(token)(gimmeTokenAmount)}>KUP</button>
         <button onClick={() => payMeUp(token)()}>WYPŁAC</button>
         <hr />
