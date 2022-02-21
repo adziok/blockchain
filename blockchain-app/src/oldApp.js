@@ -22,7 +22,9 @@ function App() {
   };
 
   const buy = (_token) => async (amount) => {
-    const tx = await _token.gimme(amount);
+    const tx = await _token.buy({
+      value: ethers.utils.parseUnits(amount + "", 18),
+    });
     await tx.wait();
     await refresh(token, signer);
   };

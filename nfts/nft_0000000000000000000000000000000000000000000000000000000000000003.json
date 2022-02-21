@@ -1,0 +1,8 @@
+{
+  "name": "Baby hedgehog",
+  "description": "Baby hedgehog, Mike",
+  "image": "https://cdn.pixabay.com/photo/2016/10/21/19/45/hedgehog-1759027_1280.jpg",
+  "properties": {
+    "size": "baby"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Great hedgehog",
+  "description": "Great hedgehog, Merry",
+  "image": "https://cdn.pixabay.com/photo/2016/02/22/10/06/hedgehog-1215140_1280.jpg",
+  "properties": {
+    "size": "huge"
+  }
+}

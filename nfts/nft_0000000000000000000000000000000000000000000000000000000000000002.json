@@ -1,0 +1,8 @@
+{
+  "name": "Big hedgehog",
+  "description": "Big hedgehog, Josh",
+  "image": "https://cdn.pixabay.com/photo/2018/08/27/21/36/hedgehog-3636026_1280.jpg",
+  "properties": {
+    "size": "big"
+  }
+}
