@@ -1,36 +1,128 @@
 import "./App.css";
 import { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import LEOAddress from "./blockchain/LecodeTokenAdrress.json";
-import LEO from "./blockchain/LeocodeToken.json";
+import { BigNumber, ethers } from "ethers";
+import addresses from "./blockchain/deployment.json";
+import LeocodeToken from "./blockchain/LeocodeToken.json";
+import LEON from "./blockchain/LEON.json";
+import USDT from "./blockchain/USDT.json";
+import Marketplace from "./blockchain/Marketplace.json";
 import { useInput } from "./hooks";
 
+// {
+//   leo: any,
+//   leon: any,
+//   market: any,
+//   usdt: any,
+// }
+
 function App() {
+  // {
+  //   leo: any,
+  //   leon: any,
+  //   market: any,
+  //   usdt: any,
+  // }
+  const [nfts, setNfts] = useState([]);
+  const [tokens, setTokens] = useState({});
   const [error, setError] = useState(null);
   const [address, setAddress] = useState(null);
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
-  const [token, setToken] = useState(null);
-  const [tokenAmount, setTokenAmount] = useState(null);
+  const [leoTokenAmount, leoSetTokenAmount] = useState(null);
+  const [usdtTokenAmount, usdtSetTokenAmount] = useState(null);
+  // const [leoTokenAmount, leoSetTokenAmount] = useState(null);
   const { onChange, value: gimmeTokenAmount } = useInput(0);
 
-  const refresh = async (_token, _signer) => {
-    const tokens = await _token.balanceOf(await _signer.getAddress());
-    const _formattedTokens = ethers.utils.formatUnits(tokens, 18);
+  const refresh = async (_signer) => {
+    const leoTokens = await tokens.leo.balanceOf(await _signer.getAddress());
+    const _leoFormattedTokens = ethers.utils.formatUnits(leoTokens, 18);
+    const usdtTokens = await tokens.usdt.balanceOf(await _signer.getAddress());
+    const _usdtFormattedTokens = ethers.utils.formatUnits(usdtTokens, 6);
 
-    setTokenAmount(_formattedTokens);
+    leoSetTokenAmount(_leoFormattedTokens);
+    usdtSetTokenAmount(_usdtFormattedTokens);
   };
 
-  const buy = (_token) => async (amount) => {
+  const buyLeo = (_token) => async (amount) => {
+    await tokens.usdt.approve(
+      tokens.market.address,
+      BigNumber.from(
+        BigNumber.from(BigNumber.from(amount).mul(BigNumber.from(10).pow(18)))
+          .div(BigNumber.from(10).pow(12))
+          .div(100)
+      ).mul(3)
+    );
+    const tx = await tokens.market.buyLEOForUSDT(
+      ethers.utils.parseUnits(amount, 18)
+    );
+    await tx.wait();
+    await refresh(signer);
+  };
+
+  const gimmeUsdt = (_token) => async (amount) => {
     const tx = await _token.gimme(amount);
     await tx.wait();
-    await refresh(token, signer);
+    await refresh(signer);
   };
 
-  const payMeUp = (_token) => async () => {
-    const tx = await _token.payMeUp();
+  const buyNftForUsdt = async (amount) => {
+    await tokens.usdt.approve(
+      tokens.market.address,
+      BigNumber.from("15").mul(BigNumber.from(10).pow(6))
+    );
+    const tx = await tokens.market.buyNFTForUSDT(0);
     await tx.wait();
-    await refresh(token, signer);
+    await refresh(signer);
+  };
+
+  const buyNftForLeo = async (amount) => {
+    await tokens.leo.approve(
+      tokens.market.address,
+      BigNumber.from("200").mul(BigNumber.from("10").pow(18))
+    );
+    const tx = await tokens.market.buyNFTForLEO(0);
+    await tx.wait();
+    await refresh(signer);
+  };
+
+  const sellNftForUsdt = async (amount) => {
+    const tx = await tokens.market.sellNFTForUSDT(0);
+    await tx.wait();
+    await refresh(signer);
+  };
+
+  const sellNftForLeo = async (amount) => {
+    const tx = await tokens.market.sellNFTForLEO(0);
+    await tx.wait();
+    await refresh(signer);
+  };
+
+  const sellLeo = (_token) => async (amount) => {
+    const tx = await tokens.market.sellLEOForUSDT(
+      ethers.utils.parseUnits(amount, 18)
+    );
+    await tx.wait();
+    await refresh(signer);
+  };
+
+  const listNfts = async () => {
+    console.log(await tokens.leon.balanceOf(tokens.market.address, 0));
+  };
+
+  const loadNfts = async () => {
+    const amount = await tokens.leon.balanceOf(await tokens.market.owner(), 0);
+    const jsonUrl = await tokens.leon.uri(0);
+    const { image } = (
+      await fetch(
+        jsonUrl.replace(
+          "{id}",
+          "0000000000000000000000000000000000000000000000000000000000000001"
+        ),
+        { mode: "cors" }
+      )
+    ).json();
+
+    setNfts(() => [{ url: image, amount: amount.toString() }]);
   };
 
   const connect = async () => {
@@ -51,32 +143,71 @@ function App() {
       setAddress(_address);
 
       // read-only
-      const _token = new ethers.Contract(LEOAddress.address, LEO.abi, _signer);
-      setToken(_token);
+      const _tokenLeo = new ethers.Contract(
+        addresses.LEO,
+        LeocodeToken.abi,
+        _signer
+      );
+      const _tokenUsdt = new ethers.Contract(addresses.USDT, USDT.abi, _signer);
+      const _tokenMarket = new ethers.Contract(
+        addresses.MARKET,
+        Marketplace.abi,
+        _signer
+      );
+      const _tokenNft = new ethers.Contract(addresses.NFT, LEON.abi, _signer);
+      setTokens(() => ({
+        leo: _tokenLeo,
+        leon: _tokenNft,
+        market: _tokenMarket,
+        usdt: _tokenUsdt,
+      }));
 
-      refresh(_token, _signer);
+      refresh(_signer);
     } else {
       setError("Missing wallet");
     }
   };
 
-  useEffect(() => {}, []);
-
   return (
     <div className="App">
       <header className="App-header">
         <button onClick={() => connect()}>{address || "connect"}</button>
-        <button onClick={() => refresh(token, signer)}>REFRESH</button>
+        <button onClick={() => refresh(signer)}>REFRESH</button>
         <hr />
-
         <div>
           <input value={gimmeTokenAmount} onChange={onChange} />
         </div>
-        <button onClick={() => buy(token)(gimmeTokenAmount)}>KUP</button>
-        <button onClick={() => payMeUp(token)()}>WYPŁAC</button>
+        <button onClick={() => buyLeo(tokens.market)(gimmeTokenAmount)}>
+          KUP
+        </button>
+        <button onClick={() => sellLeo(tokens.market)(gimmeTokenAmount)}>
+          SELL
+        </button>
+        <button onClick={() => gimmeUsdt(tokens.usdt)(gimmeTokenAmount)}>
+          DAJ USDT
+        </button>
+        <button onClick={() => listNfts(gimmeTokenAmount)}>list nfts</button>
         <hr />
+        <button onClick={() => buyNftForLeo()}>buyNftForLeo</button>
+        <button onClick={() => sellNftForLeo()}>sellNftForLeo</button>
+        <hr />
+        <button onClick={() => buyNftForUsdt()}>buyNftForUsdt</button>
+        <button onClick={() => sellNftForUsdt()}>sellNftForUsdt</button>
+        <hr />
+        <button onClick={() => loadNfts()}>loadNfts</button>
         <div color={"red"}>{error}</div>
-        <div>You have: {tokenAmount} LEO tokens</div>
+        <div>You have: {leoTokenAmount} LEO tokens</div>
+        <div>You have: {usdtTokenAmount} USDT tokens</div>
+        {nfts.map((nft) => {
+          console.log(nft);
+          return (
+            <div>
+              url: {nft.url}
+              <hr />
+              amount: {nft.amount}
+            </div>
+          );
+        })}
       </header>
     </div>
   );

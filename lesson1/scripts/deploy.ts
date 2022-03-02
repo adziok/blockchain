@@ -6,6 +6,8 @@
 import { ethers } from "hardhat";
 import * as fs from "fs";
 import * as path from "path";
+import { BigNumber } from "ethers";
+import { LeocodeToken, LEON } from "../typechain";
 
 type DeploymentProgress = {
   LEO?: string;
@@ -55,6 +57,102 @@ const saveDeploymentAndRemoveProgressFile = (data: DeploymentProgress) => {
   }
 };
 
+const copyFilesToFrontend = () => {
+  // eslint-disable-next-line node/no-unsupported-features/node-builtins
+  fs.copyFileSync(
+    path.join(__dirname, "deployment.json"),
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "blockchain-app",
+      "src",
+      "blockchain",
+      "deployment.json"
+    )
+  );
+  // eslint-disable-next-line node/no-unsupported-features/node-builtins
+  fs.copyFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "artifacts",
+      "contracts",
+      "LecodeToken.sol",
+      "LeocodeToken.json"
+    ),
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "blockchain-app",
+      "src",
+      "blockchain",
+      "LeocodeToken.json"
+    )
+  );
+  // eslint-disable-next-line node/no-unsupported-features/node-builtins
+  fs.copyFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "artifacts",
+      "contracts",
+      "LecodeToken.sol",
+      "LEON.json"
+    ),
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "blockchain-app",
+      "src",
+      "blockchain",
+      "LEON.json"
+    )
+  );
+  // eslint-disable-next-line node/no-unsupported-features/node-builtins
+  fs.copyFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "artifacts",
+      "contracts",
+      "LecodeToken.sol",
+      "USDT.json"
+    ),
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "blockchain-app",
+      "src",
+      "blockchain",
+      "USDT.json"
+    )
+  );
+  // eslint-disable-next-line node/no-unsupported-features/node-builtins
+  fs.copyFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "artifacts",
+      "contracts",
+      "LecodeToken.sol",
+      "Marketplace.json"
+    ),
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "blockchain-app",
+      "src",
+      "blockchain",
+      "Marketplace.json"
+    )
+  );
+};
+
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
@@ -65,10 +163,12 @@ async function main() {
 
   // We get the contract to deploy
   const progress = loadProgressObject();
+  let leocodeToken: LeocodeToken;
+  let nft: LEON;
 
   if (!progress.LEO) {
     const LeocodeToken = await ethers.getContractFactory("LeocodeToken");
-    const leocodeToken = await LeocodeToken.deploy();
+    leocodeToken = await LeocodeToken.deploy();
 
     await leocodeToken.deployed();
 
@@ -90,12 +190,12 @@ async function main() {
 
   if (!progress.NFT) {
     const Nft = await ethers.getContractFactory("LEON");
-    const nft = await Nft.deploy();
+    nft = await Nft.deploy();
 
     await nft.deployed();
 
     progress.NFT = nft.address;
-    saveDeploymentAndRemoveProgressFile(progress);
+    saveProgressObject(progress);
     console.log("NFT deployed to:", nft.address);
   }
 
@@ -109,7 +209,21 @@ async function main() {
   await marketplace.deployed();
 
   progress.MARKET = marketplace.address;
-  saveProgressObject(progress);
+
+  await leocodeToken!.transfer(
+    marketplace.address,
+    BigNumber.from("100000").mul(BigNumber.from("10").pow(18))
+  );
+  await nft!.setApprovalForAll(marketplace.address, true);
+  // await nft!.safeTransferFrom(
+  //   await marketplace.owner(),
+  //   marketplace.address,
+  //   0,
+  //   3,
+  //   ethers.utils.randomBytes(8)
+  // );
+  saveDeploymentAndRemoveProgressFile(progress);
+  copyFilesToFrontend();
   console.log("Marketplace deployed to:", marketplace.address);
 }
 

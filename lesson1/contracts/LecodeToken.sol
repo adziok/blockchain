@@ -21,7 +21,7 @@ contract Marketplace is ERC1155Holder {
     IERC20 LEO;
     IERC20 uSDT;
     LEON nft;
-    address owner;
+    address public owner;
 
     constructor(address _LEO, address _USDT, address _nft) {
         LEO = IERC20(_LEO);

@@ -132,7 +132,7 @@ describe("Marketplace", function () {
       ).to.eq(BigNumber.from("200").mul(BigNumber.from("10").pow(18)));
     });
 
-    it.only("Should buy LOEN for 1,5 usdt", async () => {
+    it("Should buy LOEN for 1,5 usdt", async () => {
       await marketplaceToken.connect(otherUser).buyNFTForUSDT(0);
 
       expect(
@@ -140,7 +140,7 @@ describe("Marketplace", function () {
       ).to.eq(1);
     });
 
-    it.only("Should sell LEON for 1,5 usdt", async () => {
+    it("Should sell LEON for 1,5 usdt", async () => {
       await marketplaceToken.connect(otherUser).buyNFTForUSDT(0);
       await nftToken
         .connect(otherUser)
