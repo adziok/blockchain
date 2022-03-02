@@ -1,0 +1,8 @@
+{
+  "name": "root",
+  "scripts": {
+    "develop": "npx hardhat --network localhost faucet",
+    "copy-token-things": "cp ./lesson1/artifacts/contracts/LecodeToken.sol/LeocodeToken.json blockchain-app/src/blockchain/LeocodeToken.json",
+    "create-address": "touch "
+  }
+}
