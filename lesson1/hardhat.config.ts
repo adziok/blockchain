@@ -53,10 +53,16 @@ task("faucet", "Sends one ETH to given address")
 const config: HardhatUserConfig = {
   solidity: "0.8.4",
   networks: {
-    ropsten: {
-      url: process.env.ROPSTEN_URL || "",
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    // ropsten: {
+    //   url: process.env.ROPSTEN_URL || "",
+    //   accounts:
+    //     process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    // },
+    rinkeby: {
+      url: "https://rinkeby.infura.io/v3/fa58f2f425fc464c8e2c649b96752402", // Infura url with projectId
+      accounts: [
+        "6c79eaa46e21fa4ece2716672f4f00f766d9992b9016f0ae83c258bf27ae0853",
+      ], // add the account that will deploy the contract (private key)
     },
   },
   gasReporter: {

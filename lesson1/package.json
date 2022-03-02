@@ -2,7 +2,8 @@
   "name": "hardhat-project",
   "scripts": {
     "send": "npx hardhat --network localhost faucet",
-    "deploy:local": "npx hardhat run --network localhost scripts/deploy.ts "
+    "deploy:local": "npx hardhat run --network localhost scripts/deploy.ts",
+    "deploy:infura": "npx hardhat run --network rinkeby scripts/deploy.ts"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.4",

@@ -2,71 +2,87 @@
 pragma solidity ^0.8.0;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+
 import 'hardhat/console.sol';
 
+contract LEON is ERC1155 {
+    uint256 public constant HEDGEHOG = 0;
 
-contract Ownable {
-    address owner;
-    constructor() public {
-        owner = msg.sender;
-    }
-    modifier isOwner {
-        require(msg.sender == owner);
-        _;
+    constructor() public ERC1155("http://ifglakjndijadsjpagdspgpijagag.s3-website.eu-central-1.amazonaws.com/nfts/nft_{id}.json") {
+        _mint(address(msg.sender), HEDGEHOG, 3, "");
     }
 }
 
-contract LeocodeToken is ERC20, Ownable {
-    struct Vesting {
-        uint256 releasedAt;
-        uint256 amount;
+contract Marketplace is ERC1155Holder {
+    IERC20 LEO;
+    IERC20 uSDT;
+    LEON nft;
+    address public owner;
+
+    constructor(address _LEO, address _USDT, address _nft) {
+        LEO = IERC20(_LEO);
+        uSDT = IERC20(_USDT);
+        nft = LEON(_nft);
+        owner = msg.sender;
     }
 
-    mapping(address => Vesting) private _vestings;
+    function buyLEOForUSDT(uint256 _amount) public {
+        require(_amount / 10 ** 12 >= 100, "Minimal amount to buy is 10^14");
+        uint256 usdtToPay = (_amount / 10 ** 12 / 100) * 3;
+        require(LEO.transfer(msg.sender, _amount));
+        require(uSDT.transferFrom(msg.sender, address(this), usdtToPay));
+    }
 
+    function sellLEOForUSDT(uint256 _amount) public {
+        require(_amount / 10 ** 12 >= 100, "Minimal amount to sell is 10^14");
+        uint256 usdtToPay = (_amount / 10 ** 12 / 100) * 3;
+        require(uSDT.transfer(msg.sender, usdtToPay));
+        require(LEO.transferFrom(msg.sender, address(this), _amount));
+    }
 
+    function buyNFTForUSDT(uint256 _id) public {
+        uint256 usdtToPay =  15 * 10 ** 5;
+        require(uSDT.transferFrom(msg.sender, address(this), usdtToPay));
+        nft.safeTransferFrom(owner, msg.sender, _id, 1, "0x123");
+    }
+
+    function sellNFTForUSDT(uint256 _id) public {
+        uint256 usdtToPay =  15 * 10 ** 5;
+        require(uSDT.transfer(msg.sender, usdtToPay));
+        nft.safeTransferFrom(msg.sender, owner, _id, 1, "0x123");
+    }
+
+    function buyNFTForLEO(uint256 _id) public {
+        uint256 leoToPay =  200 * 10 ** 18;
+        require(LEO.transferFrom(msg.sender, address(this), leoToPay));
+        nft.safeTransferFrom(owner, msg.sender, _id, 1, "0x123");
+    }
+
+    function sellNFTForLEO(uint256 _id) public {
+        uint256 leoToPay =  200 * 10 ** 18;
+        require(LEO.transfer(msg.sender, leoToPay));
+        nft.safeTransferFrom(msg.sender, owner, _id, 1, "0x123");
+    }
+}
+
+contract USDT is ERC20 {
+    constructor() ERC20("USD Token", "USDT") {}
+
+    function decimals() public view virtual override returns (uint8) {
+        return 6;
+    }
+
+    function gimme(uint256 _amount) public {
+        _mint(msg.sender, _amount * (10 ** decimals()));
+    }
+}
+
+contract LeocodeToken is ERC20 {
     constructor() ERC20("Leocode Token", "LEO") {
-        _mint(address(this), 100_000 * (10 ** decimals()));
-    }
-
-    function buy() public payable {
-        require(msg.value > 0, "Value must be greater than 0");
-        uint256 amountToBuy = msg.value * 100;
-        require(balanceOf(address(this)) >= amountToBuy, "Token limit exceeded");
-        require(isBuyInLessThanWeekAgo() == false, "Token already bought in less than a week");
-        _vestings[msg.sender] = Vesting({
-            releasedAt: block.timestamp + (7 days),
-            amount: amountToBuy
-        });
-        _transfer(address(this), msg.sender, amountToBuy);
-    }
-
-    function payMeUp() public isOwner {
-        address payable ownerPayable = payable(owner);
-        ownerPayable.transfer(address(this).balance);
-    }
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override {
-        if(from != address(0) && from != address(this)) {
-            require(amount < balanceOf(from) - getLockedTokensAmount(from), "Not enough available tokens");
-        }
-    }
-
-    function getLockedTokensAmount(address sender) public view returns (uint256) {
-        if (_vestings[sender].releasedAt > block.timestamp) {
-            return _vestings[sender].amount;
-        }
-        return 0;
-    }
-
-    function isBuyInLessThanWeekAgo() public view returns (bool) {
-        if (_vestings[msg.sender].releasedAt > block.timestamp) {
-            return true;
-        }
-        return false;
+        _mint(msg.sender, 100_000 * (10 ** decimals()));
     }
 }
